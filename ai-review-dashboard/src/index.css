@@ -41,6 +41,14 @@
   --color-bubble-customer-border: #364153;
   --color-bubble-assistant-border: #325385;
 
+  --color-weather-surface: #0f1d31;
+  --color-weather-surface-strong: #163150;
+  --color-weather-border: #3a6ea8;
+  --color-weather-chip: #183250;
+  --color-weather-chip-border: #3b6798;
+  --color-weather-accent: #8ed8ff;
+  --color-weather-glow: rgba(78, 140, 255, 0.22);
+
   /* radius */
   --radius-panel: 24px;
   --radius-card: 18px;
@@ -109,13 +117,46 @@
   .bubble-assistant {
     @apply rounded-[var(--radius-bubble)] border border-bubble-assistant-border bg-bubble-assistant;
   }
+
+  .weather-card {
+    @apply rounded-[var(--radius-card)] border;
+    border-color: var(--color-weather-border);
+    background:
+      radial-gradient(circle at top right, var(--color-weather-glow), transparent 42%),
+      linear-gradient(
+        180deg,
+        var(--color-weather-surface-strong) 0%,
+        var(--color-weather-surface) 100%
+      );
+    box-shadow:
+      0 0 0 1px rgba(58, 110, 168, 0.16),
+      0 14px 34px rgba(0, 0, 0, 0.26);
+  }
+
+  .weather-chip {
+    @apply rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em];
+    border-color: var(--color-weather-chip-border);
+    background: var(--color-weather-chip);
+    color: var(--color-weather-accent);
+  }
+
+  .weather-action {
+    @apply rounded-[var(--radius-control)] border px-3 py-2 text-sm font-medium transition;
+    border-color: var(--color-weather-chip-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-primary);
+  }
+
+  .weather-action:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
 }
 
 @utility no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
 
-@utility no-scrollbar::-webkit-scrollbar {
-  display: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

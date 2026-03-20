@@ -1,8 +1,9 @@
-import type { Conversation } from "../../types/conversation";
+import type { Conversation, MessageNote } from "../../types/conversation";
 import EmptyState from "../states/EmptyState";
 import MessageBubble from "./MessageBubble";
 import ReviewStatusBadge from "../review/ReviewStatusBadge";
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import WeatherCard from "../weather/WeatherCard";
 
 type ConversationDetailsProps = {
   conversation: Conversation;
@@ -26,6 +27,16 @@ function ConversationDetails({
   onBackToList,
   onOpenReview,
 }: ConversationDetailsProps) {
+  const notesByMessageId = useMemo(() => {
+    return conversation.messageNotes.reduce<Record<string, MessageNote[]>>(
+      (accumulator, note) => {
+        const currentNotes = accumulator[note.messageId] ?? [];
+        accumulator[note.messageId] = [...currentNotes, note];
+        return accumulator;
+      },
+      {},
+    );
+  }, [conversation.messageNotes]);
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <header className="shrink-0 border-b border-border-subtle px-4 py-3 md:px-5">
@@ -83,6 +94,9 @@ function ConversationDetails({
       </header>
 
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-5 md:py-5">
+        <div className="mb-4">
+          <WeatherCard city={conversation.customerCity} />
+        </div>
         {conversation.messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <EmptyState
@@ -92,21 +106,15 @@ function ConversationDetails({
           </div>
         ) : (
           <div className="space-y-4">
-            {conversation.messages.map((message) => {
-              const messageNotes = conversation.messageNotes.filter(
-                (note) => note.messageId === message.id,
-              );
-
-              return (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  notes={messageNotes}
-                  isSelected={selectedMessageId === message.id}
-                  onSelect={() => onSelectMessage(message.id)}
-                />
-              );
-            })}
+            {conversation.messages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                notes={notesByMessageId[message.id] ?? []}
+                isSelected={selectedMessageId === message.id}
+                onSelect={() => onSelectMessage(message.id)}
+              />
+            ))}
           </div>
         )}
       </div>

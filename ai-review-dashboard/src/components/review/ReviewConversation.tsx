@@ -25,6 +25,8 @@ type ReviewConversationProps = {
   onBackToConversation: () => void;
 };
 
+const statuses: ReviewStatus[] = ["pending", "approved", "needs_fix"];
+
 function ReviewConversation({
   conversation,
   selectedMessage,
@@ -35,20 +37,22 @@ function ReviewConversation({
 }: ReviewConversationProps) {
   const [conversationNote, setConversationNote] = useState("");
   const [messageNote, setMessageNote] = useState("");
+
   const [conversationNoteError, setConversationNoteError] = useState<
     string | null
   >(null);
+
   const [messageNoteError, setMessageNoteError] = useState<string | null>(null);
 
-  const selectedMessageNotes = useMemo(
-    () =>
-      selectedMessage
-        ? conversation.messageNotes.filter(
-            (note) => note.messageId === selectedMessage.id,
-          )
-        : [],
-    [conversation.messageNotes, selectedMessage],
-  );
+  const selectedMessageNotes = useMemo(() => {
+    if (!selectedMessage) {
+      return [];
+    }
+
+    return conversation.messageNotes.filter(
+      (note) => note.messageId === selectedMessage.id,
+    );
+  }, [conversation.messageNotes, selectedMessage]);
 
   const trimmedConversationNote = conversationNote.trim();
   const trimmedMessageNote = messageNote.trim();

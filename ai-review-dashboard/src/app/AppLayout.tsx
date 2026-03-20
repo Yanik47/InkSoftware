@@ -38,7 +38,7 @@ export function AppLayout({
 
           <div className="hidden items-center gap-2 lg:flex">
             <span className="rounded-full border border-border-subtle bg-bg-elevated px-3 py-1 text-xs text-text-secondary">
-              -inspired layout
+              Chat-inspired layout
             </span>
           </div>
         </header>

@@ -10,6 +10,12 @@ type ConversationSidebarProps = {
   onSelectConversation: (conversationId: string) => void;
 };
 
+type IndexedConversation = {
+  conversation: Conversation;
+  normalizedSearchText: string;
+  updatedAtMs: number;
+};
+
 function ConversationSidebar({
   conversations,
   selectedConversationId,
@@ -18,11 +24,26 @@ function ConversationSidebar({
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ReviewStatus | "all">("all");
 
+  const indexedConversations = useMemo<IndexedConversation[]>(() => {
+    return conversations.map((conversation) => ({
+      conversation,
+      normalizedSearchText: [
+        conversation.title,
+        conversation.category,
+        conversation.customerCity,
+        ...conversation.messages.map((message) => message.text),
+      ]
+        .join(" ")
+        .toLowerCase(),
+      updatedAtMs: new Date(conversation.updatedAt).getTime(),
+    }));
+  }, [conversations]);
+
   const filteredConversations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return [...conversations]
-      .filter((conversation) => {
+    return indexedConversations
+      .filter(({ conversation, normalizedSearchText }) => {
         if (activeFilter !== "all" && conversation.status !== activeFilter) {
           return false;
         }
@@ -31,21 +52,11 @@ function ConversationSidebar({
           return true;
         }
 
-        return [
-          conversation.title,
-          conversation.category,
-          conversation.customerCity,
-          conversation.messages.map((message) => message.text).join(" "),
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedQuery);
+        return normalizedSearchText.includes(normalizedQuery);
       })
-      .sort(
-        (left, right) =>
-          new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
-      );
-  }, [activeFilter, conversations, query]);
+      .sort((left, right) => right.updatedAtMs - left.updatedAtMs)
+      .map(({ conversation }) => conversation);
+  }, [activeFilter, indexedConversations, query]);
 
   return (
     <div className="flex h-full flex-col gap-4 p-3 md:p-4">
