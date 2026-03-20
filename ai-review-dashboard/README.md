@@ -31,21 +31,6 @@ The app includes:
 - Handle weather loading and error states  
 - Responsive three-panel layout with mobile pane switching  
 - Dark mode UI  
-  
-## Project Structure  
-
-```text
-src/  
-  app/  
-  components/  
-    conversation/  
-    review/  
-    sidePanel/  
-    states/  
-  data/  
-  lib/  
-  types/
-```
 
 
 ## Getting Started
@@ -137,7 +122,7 @@ This project was built to match the task requirements:
 
 ## Live Demo
 
-Add deployed Vercel URL here.
+[DEMO](https://ai-review-dashboard-bay.vercel.app/)
 
 ## Author
 
