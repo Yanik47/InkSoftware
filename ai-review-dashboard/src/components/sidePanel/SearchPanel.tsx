@@ -1,18 +1,14 @@
-import type { ReviewStatus } from "../../types/conversation";
+import {
+  REVIEW_FILTER_OPTIONS,
+  type ReviewFilter,
+} from "../../constants/review";
 
 type SearchPanelProps = {
   query: string;
   onQueryChange: (value: string) => void;
-  activeFilter: ReviewStatus | "all";
-  onFilterChange: (value: ReviewStatus | "all") => void;
+  activeFilter: ReviewFilter;
+  onFilterChange: (value: ReviewFilter) => void;
 };
-
-const filters: Array<{ value: ReviewStatus | "all"; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "needs_fix", label: "Needs fix" },
-];
 
 export default function SearchPanel({
   query,
@@ -33,7 +29,7 @@ export default function SearchPanel({
       </label>
 
       <div className="control-ui flex flex-wrap gap-2 p-2">
-        {filters.map((filter) => {
+        {REVIEW_FILTER_OPTIONS.map((filter) => {
           const active = activeFilter === filter.value;
 
           return (

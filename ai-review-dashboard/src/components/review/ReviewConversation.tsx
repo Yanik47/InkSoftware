@@ -1,10 +1,14 @@
-import { useState, memo } from "react";
+import { memo, useMemo, useState } from "react";
 
 import type {
   Conversation,
   Message,
   ReviewStatus,
 } from "../../types/conversation";
+import {
+  REVIEW_STATUS_CONFIG,
+  REVIEW_STATUS_ORDER,
+} from "../../constants/review";
 import ReviewStatusBadge from "./ReviewStatusBadge";
 import ReviewNotes from "./ReviewerNotes";
 
@@ -21,8 +25,6 @@ type ReviewConversationProps = {
   onBackToConversation: () => void;
 };
 
-const statuses: ReviewStatus[] = ["pending", "approved", "needs_fix"];
-
 function ReviewConversation({
   conversation,
   selectedMessage,
@@ -33,20 +35,62 @@ function ReviewConversation({
 }: ReviewConversationProps) {
   const [conversationNote, setConversationNote] = useState("");
   const [messageNote, setMessageNote] = useState("");
+  const [conversationNoteError, setConversationNoteError] = useState<
+    string | null
+  >(null);
+  const [messageNoteError, setMessageNoteError] = useState<string | null>(null);
 
-  const selectedMessageNotes = selectedMessage
-    ? conversation.messageNotes.filter(
-        (note) => note.messageId === selectedMessage.id,
-      )
-    : [];
+  const selectedMessageNotes = useMemo(
+    () =>
+      selectedMessage
+        ? conversation.messageNotes.filter(
+            (note) => note.messageId === selectedMessage.id,
+          )
+        : [],
+    [conversation.messageNotes, selectedMessage],
+  );
+
+  const trimmedConversationNote = conversationNote.trim();
+  const trimmedMessageNote = messageNote.trim();
+
+  const isConversationNoteValid = trimmedConversationNote.length > 0;
+  const isMessageNoteValid = trimmedMessageNote.length > 0;
+
+  const handleConversationNoteChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const nextValue = event.target.value;
+    setConversationNote(nextValue);
+
+    if (conversationNoteError && nextValue.trim()) {
+      setConversationNoteError(null);
+    }
+  };
+
+  const handleMessageNoteChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const nextValue = event.target.value;
+    setMessageNote(nextValue);
+
+    if (messageNoteError && nextValue.trim()) {
+      setMessageNoteError(null);
+    }
+  };
 
   const handleConversationNoteSubmit = (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
 
-    onAddConversationNote(conversation.id, conversationNote);
+    if (!isConversationNoteValid) {
+      setConversationNoteError("Please enter a note before saving.");
+      return;
+    }
+
+    onAddConversationNote(conversation.id, trimmedConversationNote);
     setConversationNote("");
+    setConversationNoteError(null);
   };
 
   const handleMessageNoteSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -54,12 +98,18 @@ function ReviewConversation({
 
     if (!selectedMessage) return;
 
-    onAddMessageNote(conversation.id, selectedMessage.id, messageNote);
+    if (!isMessageNoteValid) {
+      setMessageNoteError("Please enter a note before saving.");
+      return;
+    }
+
+    onAddMessageNote(conversation.id, selectedMessage.id, trimmedMessageNote);
     setMessageNote("");
+    setMessageNoteError(null);
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center justify-between gap-3 border-b border-border-subtle px-4 py-4 pb-5 md:px-5">
         <div>
           <p className="text-[11px] uppercase tracking-[0.18em] text-text-muted">
@@ -82,12 +132,14 @@ function ReviewConversation({
         </div>
       </header>
 
-      <div className="no-scrollbar flex-1 space-y-5 overflow-y-auto px-4 py-4 md:px-5 md:py-5">
+      <div className="no-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 md:px-5 md:py-5">
         <section className="card-ui p-4">
           <p className="mb-3 text-sm font-semibold text-text-primary">Status</p>
+
           <div className="grid gap-2">
-            {statuses.map((status) => {
+            {REVIEW_STATUS_ORDER.map((status) => {
               const active = conversation.status === status;
+              const config = REVIEW_STATUS_CONFIG[status];
 
               return (
                 <button
@@ -100,9 +152,7 @@ function ReviewConversation({
                       : "border-border-subtle bg-bg-elevated hover:border-border-strong"
                   }`}
                 >
-                  <span className="capitalize text-text-primary">
-                    {status.replace("_", " ")}
-                  </span>
+                  <span className="text-text-primary">{config.label}</span>
                   <ReviewStatusBadge status={status} compact />
                 </button>
               );
@@ -129,17 +179,34 @@ function ReviewConversation({
               <form
                 className="mt-4 grid gap-3"
                 onSubmit={handleMessageNoteSubmit}
+                noValidate
               >
                 <textarea
                   value={messageNote}
-                  onChange={(event) => setMessageNote(event.target.value)}
+                  onChange={handleMessageNoteChange}
                   placeholder="Add a note for this message"
                   rows={4}
-                  className="control-ui w-full resize-none px-3 py-3 text-sm text-text-primary outline-none placeholder:text-text-muted"
+                  aria-invalid={Boolean(messageNoteError)}
+                  className={`control-ui w-full resize-none px-3 py-3 text-sm text-text-primary outline-none placeholder:text-text-muted ${
+                    messageNoteError ? "ring-1 ring-status-needsfix" : ""
+                  }`}
                 />
+
+                <p
+                  className={`text-xs ${
+                    messageNoteError
+                      ? "text-status-needsfix"
+                      : "text-text-muted"
+                  }`}
+                >
+                  {messageNoteError ??
+                    "Add a clear internal note tied to the selected message."}
+                </p>
+
                 <button
                   type="submit"
-                  className="rounded-[14px] bg-accent-blue px-4 py-3 text-sm font-semibold text-text-primary transition hover:opacity-90"
+                  disabled={!isMessageNoteValid}
+                  className="rounded-[14px] bg-accent-blue px-4 py-3 text-sm font-semibold text-text-primary transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Save message note
                 </button>
@@ -162,17 +229,34 @@ function ReviewConversation({
           <h3 className="mb-3 text-sm font-semibold text-text-primary">
             Conversation note
           </h3>
-          <form className="grid gap-3" onSubmit={handleConversationNoteSubmit}>
+
+          <form className="grid gap-3" onSubmit={handleConversationNoteSubmit} noValidate>
             <textarea
               value={conversationNote}
-              onChange={(event) => setConversationNote(event.target.value)}
+              onChange={handleConversationNoteChange}
               placeholder="Summarize the overall quality of this conversation"
               rows={4}
-              className="control-ui w-full resize-none px-3 py-3 text-sm text-text-primary outline-none placeholder:text-text-muted"
+              aria-invalid={Boolean(conversationNoteError)}
+              className={`control-ui w-full resize-none px-3 py-3 text-sm text-text-primary outline-none placeholder:text-text-muted ${
+                conversationNoteError ? "ring-1 ring-status-needsfix" : ""
+              }`}
             />
+
+            <p
+              className={`text-xs ${
+                conversationNoteError
+                  ? "text-status-needsfix"
+                  : "text-text-muted"
+              }`}
+            >
+              {conversationNoteError ??
+                "Summarize the overall quality, risks, or follow-up needed."}
+            </p>
+
             <button
               type="submit"
-              className="rounded-[14px] bg-bg-elevated px-4 py-3 text-sm font-semibold text-text-primary ring-1 ring-border-default transition hover:bg-bg-muted"
+              disabled={!isConversationNoteValid}
+              className="rounded-[14px] bg-bg-elevated px-4 py-3 text-sm font-semibold text-text-primary ring-1 ring-border-default transition hover:bg-bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save conversation note
             </button>
